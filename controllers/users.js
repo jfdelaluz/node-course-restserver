@@ -1,43 +1,69 @@
 const { response, request } = require('express');
+const bcryptjs = require('bcryptjs');
 
-const usersGet = ( req = request, res = response ) => {
+const User = require('../models/user');
 
-  const { q, apikey, page = 1, limit = 10 } = req.query;
+const usersGet = async ( req = request, res = response ) => {
+
+  const { skip = 0, limit = 5 } = req.query;
+  const queryFilter = { status: true };
+
+  const [ total, users ] = await Promise.all([
+    User.countDocuments( queryFilter ),
+    User.find( queryFilter )
+      .skip( Number( skip ) )
+      .limit( Number( limit ) )
+  ]);
 
   res.json({
-    msg: 'API get - controller',
-    q,
-    apikey,
-    page,
-    limit,
+    total,
+    users,
   });
 };
 
-const usersPut = ( req = request, res = response ) => {
+const usersPut = async ( req = request, res = response ) => {
+
+  const { id } = req.params;
+  const { _id, password, google, email, ...data } = req.body;
+
+  // TODO : validate against db
+  if ( password ) {
+    // Password encryption
+    const salt = bcryptjs.genSaltSync();
+    data.password = bcryptjs.hashSync( password, salt );
+  }
+
+  const user = await User.findByIdAndUpdate( id, data );
+
+  res.json({
+    user
+  });
+};
+
+const usersPost = async ( req = request, res = response ) => {
+
+  const { name, email, password, role } = req.body;
+  const user = new User({ name, email, password, role });
+
+  // Password encryption
+  const salt = bcryptjs.genSaltSync();
+  user.password = bcryptjs.hashSync( password, salt );
+
+  // DB save
+  await user.save();
+
+  res.status( 201 ).json({
+    user
+  });
+};
+
+const usersDelete = async ( req = request, res = response ) => {
 
   const { id } = req.params;
 
-  res.json({
-    msg: 'API put - controller',
-    id: id,
-  });
-};
+  const user = await User.findByIdAndUpdate( id, { status: false } );
 
-const usersPost = ( req = request, res = response ) => {
-
-  const { name, age } = req.body;
-
-  res.status( 201 ).json({
-    msg: 'API post - controller',
-    name,
-    age,
-  });
-};
-
-const usersDelete = ( req = request, res = response ) => {
-  res.json({
-    msg: 'API delete - controller',
-  });
+  res.json( user );
 };
 
 const usersPatch = ( req = request, res = response ) => {
