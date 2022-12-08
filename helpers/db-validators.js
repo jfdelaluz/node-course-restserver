@@ -49,6 +49,13 @@ const productByNameExists = async ( name ) => {
   }
 };
 
+const collectionIsAllowed = ( collection = '', collectionList = [] ) => {
+  if ( !collectionList.includes( collection ) ) {
+    throw new Error( `Collection ${ collection } is not allowed, accepted: ${ collectionList }` );
+  }
+  return true;
+};
+
 module.exports = {
   isValidRole,
   emailExists,
@@ -57,4 +64,5 @@ module.exports = {
   categoryByNameExists,
   productByIdExists,
   productByNameExists,
+  collectionIsAllowed,
 };
